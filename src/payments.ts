@@ -43,6 +43,11 @@ export interface PaywallOptions {
   baseUrl?: string;
   /** Per-route human description shown in the 402 challenge, keyed like `routePrices`. */
   descriptions?: Record<string, string>;
+  /**
+   * Per-route input/output schemas, keyed exactly like `routePrices`. Each is
+   * copied verbatim into `accepts[].outputSchema` on every rail.
+   */
+  schemas?: Record<string, RouteSchema>;
 }
 
 /** Settlement receipt attached to the request once payment clears. */
@@ -78,6 +83,20 @@ export interface RailInfo {
  * for the rest — so `"GET /receipt/:txHash"` prices every receipt lookup.
  */
 export type RoutePrices = Record<string, string>;
+
+/**
+ * The x402 Bazaar `outputSchema` for one paid route: how to call it, and what
+ * the 200 body looks like. Published inside every `accepts` entry so an agent
+ * can construct a valid request straight from the 402 challenge, without
+ * fetching `openapi.json` first. Generated into `schemas.ts` from the OpenAPI
+ * document so spec and runtime cannot drift.
+ */
+export interface RouteSchema {
+  /** `{ type: "http", method, queryParams | bodyType + bodyFields, pathParams? }`. */
+  input: Record<string, unknown>;
+  /** JSON Schema of the 200 response body. */
+  output: Record<string, unknown>;
+}
 
 /**
  * Match a `<METHOD> <path>` route key against a live request.
@@ -153,6 +172,7 @@ function buildAccepts(
   price: string,
   resource: string,
   description: string,
+  outputSchema?: RouteSchema,
 ): PaymentRequirements[] {
   const accepts: PaymentRequirements[] = [];
 
@@ -173,6 +193,7 @@ function buildAccepts(
         payTo: rail.payTo,
         maxTimeoutSeconds: 60,
         asset: priced.asset.address,
+        outputSchema,
         // EIP-3009 domain the wallet needs to build the typed-data signature.
         extra: "eip712" in priced.asset ? priced.asset.eip712 : undefined,
       });
@@ -194,6 +215,7 @@ function buildAccepts(
         payTo: rail.payTo,
         maxTimeoutSeconds: 60,
         asset: priced.asset.address,
+        outputSchema,
         extra: {
           name: "USD Coin",
           decimals: priced.asset.decimals,
@@ -243,7 +265,7 @@ export function paywall(routePrices: RoutePrices, opts: PaywallOptions): Request
     const price = routePrices[key];
 
     const resource = resourceUrl(req, opts.baseUrl ?? process.env.PUBLIC_BASE_URL);
-    const accepts = buildAccepts(price, resource, descriptions[key]);
+    const accepts = buildAccepts(price, resource, descriptions[key], opts.schemas?.[key]);
 
     if (accepts.length === 0) {
       res.status(500).json({

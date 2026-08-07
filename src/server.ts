@@ -4,6 +4,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { activeRails, mountSolanaCheckout, paymentReceipt, paywall, usingSuiteDefaultPayTo } from "./payments.js";
 import { PolicyEngine, railOf, type SpendIntent, type WalletPolicy } from "./policy.js";
 import { signed, verify } from "./sign.js";
+import { ROUTE_SCHEMAS } from "./schemas.js";
 
 /**
  * x402-agent-wallet daemon.
@@ -38,7 +39,11 @@ const PRICES: Record<string, string> = {
   "POST /policy-check": "$0.001",
 };
 
-app.use(paywall(PRICES, { service: "x402-agent-wallet" }));
+// `schemas` publishes each paid route's request/response contract inside the 402
+// challenge (`accepts[].outputSchema`), so an agent that hits the paywall knows
+// how to call the route and what it will get back without reading the OpenAPI
+// document first. Generated from openapi.json — see src/schemas.ts.
+app.use(paywall(PRICES, { service: "x402-agent-wallet", schemas: ROUTE_SCHEMAS }));
 
 app.post("/policy-check", (req, res) => {
   const body = (req.body ?? {}) as Partial<SpendIntent>;

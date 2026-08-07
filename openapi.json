@@ -284,7 +284,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/verify": {
@@ -336,7 +337,8 @@
           "400": {
             "$ref": "#/components/responses/BadRequest"
           }
-        }
+        },
+        "security": []
       }
     },
     "/health": {
@@ -371,7 +373,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/.well-known/x402": {
@@ -392,7 +395,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     }
   },

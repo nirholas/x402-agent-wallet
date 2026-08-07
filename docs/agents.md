@@ -113,8 +113,22 @@ The policy is evaluated against the **merchant's advertised price** (`maxAmountR
 
 [`examples/mcp-tool.md`](https://github.com/nirholas/x402-agent-wallet/blob/main/examples/mcp-tool.md) exposes `check_spend`, `get_policy` and `get_ledger` as Claude tools, so the model asks before it buys and can explain a denial in the user's terms.
 
-## 7. Getting listed
+## 7. Protocol version and schemas
 
+Every `accepts` entry carries `outputSchema.input` (how to build the request) and
+`outputSchema.output` (the JSON Schema of the 200 body), generated from
+`openapi.json`. A 402 is therefore enough on its own: pay, then call the route
+exactly as `input` describes and parse what `output` promises — no second fetch
+of the spec required.
+
+The challenges are **x402 v1** (`"x402Version": 1`), the version every deployed
+`x402-fetch` / `x402` client speaks today, including the examples in this repo.
+x402 v2 — CAIP-2 network ids, and `extensions.bazaar.schema` in place of
+`accepts[].outputSchema` — is a planned future upgrade for agentcash
+compatibility. Until then, a v2-only client should treat this service as v1;
+nothing else about the flow changes.
+
+## 8. Getting listed
 Deploying this? Register it so other agents can find it:
 
 - **[x402scan.com](https://x402scan.com)** — point it at your `/.well-known/x402`.

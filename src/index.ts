@@ -67,6 +67,7 @@ export {
   type PaywallOptions,
   type RailInfo,
   type RoutePrices,
+  type RouteSchema,
 } from "./payments.js";
 
 export { sign, verify, signed, canonicalize, type SignedRecord } from "./sign.js";
