@@ -14,7 +14,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { wrapFetchWithPayment, decodeXPaymentResponse } from "x402-fetch";
 import { wrapPayerFetch, PolicyViolationError, PolicyEngine } from "../src/index.js";
 
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:4021";
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:4032";
 const intent = { merchant: "api.example.com", amountUsd: 0.02, network: "base-sepolia" };
 
 // ── Part 1: pay the daemon for a signed verdict ─────────────────────────────

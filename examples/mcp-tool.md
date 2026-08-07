@@ -25,7 +25,7 @@ import { wrapFetchWithPayment, decodeXPaymentResponse } from "x402-fetch";
 import { privateKeyToAccount } from "viem/accounts";
 import { z } from "zod";
 
-const BASE_URL = process.env.WALLET_URL ?? "http://localhost:4021";
+const BASE_URL = process.env.WALLET_URL ?? "http://localhost:4032";
 const ADMIN_KEY = process.env.ADMIN_KEY ?? "dev-admin-key";
 
 const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
@@ -149,7 +149,7 @@ server.tool("buy_data", "…", { url: z.string() }, async ({ url }) => {
       "args": ["tsx", "/absolute/path/to/mcp-agent-wallet.ts"],
       "env": {
         "PRIVATE_KEY": "0xYourAgentWalletKey",
-        "WALLET_URL": "http://localhost:4021",
+        "WALLET_URL": "http://localhost:4032",
         "ADMIN_KEY": "your-admin-key"
       }
     }

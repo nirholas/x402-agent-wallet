@@ -1,20 +1,20 @@
 # Raw curl walkthrough — 402 → pay → 200
 
-Against `npm run dev` on `localhost:4021`.
+Against `npm run dev` on `localhost:4032`.
 
 ## 1. Free routes first
 
 An agent should orient itself before spending anything:
 
 ```bash
-curl -s localhost:4021/policy | jq
+curl -s localhost:4032/policy | jq
 ```
 
 ```jsonc
 {
   "policy": {
     "dailyBudgetUsd": 1, "perRequestMaxUsd": 0.1, "approvalThresholdUsd": 0.05,
-    "perMerchantDailyUsd": { "localhost:4021": 0.25 },
+    "perMerchantDailyUsd": { "localhost:4032": 0.25 },
     "perRailDailyUsd": { "evm": 0.75, "solana": 0.75 },
     "allowedRails": ["evm", "solana"], "preferRail": "evm"
   },
@@ -26,7 +26,7 @@ curl -s localhost:4021/policy | jq
 ## 2. Ask without paying
 
 ```bash
-curl -i -s -X POST localhost:4021/policy-check \
+curl -i -s -X POST localhost:4032/policy-check \
   -H 'content-type: application/json' \
   -d '{"merchant":"api.example.com","amountUsd":0.02}'
 ```
@@ -43,7 +43,7 @@ Access-Control-Expose-Headers: x-payment-response
   "accepts": [
     {
       "scheme": "exact", "network": "base-sepolia", "maxAmountRequired": "1000",
-      "resource": "http://localhost:4021/policy-check",
+      "resource": "http://localhost:4032/policy-check",
       "description": "x402-agent-wallet: POST /policy-check",
       "mimeType": "application/json",
       "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
@@ -53,7 +53,7 @@ Access-Control-Expose-Headers: x-payment-response
     },
     {
       "scheme": "exact", "network": "solana", "maxAmountRequired": "1000",
-      "resource": "http://localhost:4021/policy-check",
+      "resource": "http://localhost:4032/policy-check",
       "description": "x402-agent-wallet: POST /policy-check",
       "mimeType": "application/json",
       "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
@@ -68,7 +68,7 @@ Access-Control-Expose-Headers: x-payment-response
 `1000` atomic USDC units = $0.001. Two rails, same price.
 
 ```bash
-curl -s -X POST localhost:4021/policy-check -H 'content-type: application/json' \
+curl -s -X POST localhost:4032/policy-check -H 'content-type: application/json' \
   -d '{"merchant":"api.example.com","amountUsd":0.02}' \
   | jq -r '.accepts[] | "\(.network)\t$\(.maxAmountRequired|tonumber/1000000)\t\(.payTo)"'
 ```
@@ -78,7 +78,7 @@ curl -s -X POST localhost:4021/policy-check -H 'content-type: application/json' 
 Signing needs a wallet, so produce the header with an x402 client (`npm run client`, or see [`agent-client.ts`](./agent-client.ts)) and pass it through:
 
 ```bash
-curl -i -s -X POST localhost:4021/policy-check \
+curl -i -s -X POST localhost:4032/policy-check \
   -H 'content-type: application/json' \
   -H "X-PAYMENT: $X_PAYMENT" \
   -d '{"merchant":"api.example.com","amountUsd":0.02}'
@@ -137,7 +137,7 @@ P='-H content-type:application/json -H'   # shorthand for the payment header bel
 Verify any verdict:
 
 ```bash
-curl -s -X POST localhost:4021/verify -H 'content-type: application/json' \
+curl -s -X POST localhost:4032/verify -H 'content-type: application/json' \
   -d '{"payload":{…},"signature":"8b1e…"}' | jq
 # { "valid": true }
 ```
@@ -146,16 +146,16 @@ curl -s -X POST localhost:4021/verify -H 'content-type: application/json' \
 
 ```bash
 # Record what actually settled
-curl -s -X POST localhost:4021/record-spend \
+curl -s -X POST localhost:4032/record-spend \
   -H 'X-Admin-Key: dev-admin-key' -H 'content-type: application/json' \
   -d '{"merchant":"api.example.com","amountUsd":0.02,"network":"base-sepolia"}' | jq
 
-curl -s localhost:4021/ledger -H 'X-Admin-Key: dev-admin-key' \
+curl -s localhost:4032/ledger -H 'X-Admin-Key: dev-admin-key' \
   | jq '{spentTodayUsd, spentTodayByRail}'
 # { "spentTodayUsd": 0.02, "spentTodayByRail": { "evm": 0.02, "solana": 0 } }
 
 # Without the key
-curl -s localhost:4021/ledger
+curl -s localhost:4032/ledger
 # { "error": "UNAUTHORIZED", "hint": "Send X-Admin-Key header (ADMIN_KEY env)" }
 ```
 
@@ -165,7 +165,7 @@ Only `kind: "spend"` entries consume budget. Evaluations are logged as `approved
 
 ```bash
 # Missing required fields
-curl -s -X POST localhost:4021/policy-check -H 'content-type: application/json' -d '{}' \
+curl -s -X POST localhost:4032/policy-check -H 'content-type: application/json' -d '{}' \
   -H "X-PAYMENT: $X_PAYMENT" | jq
 # { "error": "BAD_REQUEST", "hint": "POST { merchant: string, amountUsd: number, … }" }
 

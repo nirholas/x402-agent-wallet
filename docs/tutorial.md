@@ -24,7 +24,7 @@ Node 18+. The `.env.example` ships with working defaults on both rails, so nothi
   "dailyBudgetUsd": 1.0,              // total per UTC day
   "perRequestMaxUsd": 0.1,            // hard ceiling on any single payment
   "approvalThresholdUsd": 0.05,       // at/above this, an approvalRef is required
-  "perMerchantDailyUsd": { "localhost:4021": 0.25 },
+  "perMerchantDailyUsd": { "localhost:4032": 0.25 },
   "perRailDailyUsd": { "evm": 0.75, "solana": 0.75 },
   "allowedMerchants": [],             // non-empty ⇒ allowlist only
   "blockedMerchants": ["evil.example"],
@@ -46,7 +46,7 @@ npm run dev
 ```
 
 ```
-x402-agent-wallet daemon on http://localhost:4021
+x402-agent-wallet daemon on http://localhost:4032
 
 Payment rails (client picks one):
   evm     base-sepolia   USDC → 0x40252CFDF8B20Ed757D61ff157719F33Ec332402
@@ -63,7 +63,7 @@ Policy: config/policy.json
 ## 4. Read the rules before you spend
 
 ```bash
-curl -s localhost:4021/policy | jq
+curl -s localhost:4032/policy | jq
 ```
 
 Free, so an agent can orient itself without paying. `policyDigest` is an HMAC of the policy — remember it; verdicts carry it, and it changes when the operator changes the rules.
@@ -71,7 +71,7 @@ Free, so an agent can orient itself without paying. `policyDigest` is an HMAC of
 ## 5. Your first 402
 
 ```bash
-curl -s -X POST localhost:4021/policy-check \
+curl -s -X POST localhost:4032/policy-check \
   -H 'content-type: application/json' \
   -d '{"merchant":"api.example.com","amountUsd":0.02}' | jq .accepts
 ```
@@ -146,11 +146,11 @@ Denials are `200`s. You paid for the answer, and "no" is the answer.
 The daemon only knows about spends you tell it about:
 
 ```bash
-curl -s -X POST localhost:4021/record-spend -H 'X-Admin-Key: dev-admin-key' \
+curl -s -X POST localhost:4032/record-spend -H 'X-Admin-Key: dev-admin-key' \
   -H 'content-type: application/json' \
   -d '{"merchant":"api.example.com","amountUsd":0.02,"network":"base-sepolia","verdictId":"verdict_1c2b…"}' | jq
 
-curl -s localhost:4021/ledger -H 'X-Admin-Key: dev-admin-key' | jq '{spentTodayUsd, spentTodayByRail}'
+curl -s localhost:4032/ledger -H 'X-Admin-Key: dev-admin-key' | jq '{spentTodayUsd, spentTodayByRail}'
 # { "spentTodayUsd": 0.02, "spentTodayByRail": { "evm": 0.02, "solana": 0 } }
 ```
 

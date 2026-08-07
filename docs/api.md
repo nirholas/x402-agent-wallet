@@ -135,7 +135,7 @@ canonicalize(value)                 // deterministic JSON, keys sorted recursive
 
 ## HTTP API
 
-Base URL: `http://localhost:4021` in dev.
+Base URL: `http://localhost:4032` in dev.
 
 ### `POST /policy-check` — $0.001
 

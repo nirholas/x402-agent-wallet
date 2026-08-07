@@ -21,7 +21,7 @@ import { signed, verify } from "./sign.js";
  * caller can prove to a supervisor what it was told.
  */
 
-const port = Number(process.env.PORT || 4021);
+const port = Number(process.env.PORT || 4032);
 const adminKey = process.env.ADMIN_KEY || "dev-admin-key";
 
 const policyFile = process.env.POLICY_FILE || "config/policy.json";

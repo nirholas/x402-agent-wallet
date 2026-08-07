@@ -3,7 +3,7 @@
   "perRequestMaxUsd": 0.1,
   "approvalThresholdUsd": 0.05,
   "perMerchantDailyUsd": {
-    "localhost:4021": 0.25
+    "localhost:4032": 0.25
   },
   "perRailDailyUsd": {
     "evm": 0.75,

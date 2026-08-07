@@ -7,7 +7,7 @@
     "license": { "name": "Apache-2.0", "identifier": "Apache-2.0" },
     "contact": { "name": "nirholas", "email": "nichxbt@gmail.com", "url": "https://github.com/nirholas/x402-agent-wallet" }
   },
-  "servers": [{ "url": "http://localhost:4021", "description": "Local dev daemon" }],
+  "servers": [{ "url": "http://localhost:4032", "description": "Local dev daemon" }],
   "tags": [
     { "name": "paid", "description": "Routes behind the x402 dual-rail paywall" },
     { "name": "free", "description": "Free routes (some require X-Admin-Key)" }
@@ -245,7 +245,7 @@
               "accepts": [
                 {
                   "scheme": "exact", "network": "base-sepolia", "maxAmountRequired": "1000",
-                  "resource": "http://localhost:4021/policy-check",
+                  "resource": "http://localhost:4032/policy-check",
                   "description": "x402-agent-wallet: POST /policy-check",
                   "mimeType": "application/json",
                   "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
@@ -255,7 +255,7 @@
                 },
                 {
                   "scheme": "exact", "network": "solana", "maxAmountRequired": "1000",
-                  "resource": "http://localhost:4021/policy-check",
+                  "resource": "http://localhost:4032/policy-check",
                   "description": "x402-agent-wallet: POST /policy-check",
                   "mimeType": "application/json",
                   "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",

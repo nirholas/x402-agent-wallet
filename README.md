@@ -30,7 +30,7 @@ npm run dev
 ```
 
 ```bash
-curl -s -X POST localhost:4021/policy-check -H 'content-type: application/json' \
+curl -s -X POST localhost:4032/policy-check -H 'content-type: application/json' \
   -d '{"merchant":"api.example.com","amountUsd":0.02}' | jq .accepts   # 402, both rails
 npm run client                                                          # pay it, get the verdict
 ```
