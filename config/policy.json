@@ -1,0 +1,17 @@
+{
+  "dailyBudgetUsd": 1.0,
+  "perRequestMaxUsd": 0.1,
+  "approvalThresholdUsd": 0.05,
+  "perMerchantDailyUsd": {
+    "localhost:4021": 0.25
+  },
+  "perRailDailyUsd": {
+    "evm": 0.75,
+    "solana": 0.75
+  },
+  "allowedMerchants": [],
+  "blockedMerchants": ["evil.example"],
+  "allowedNetworks": ["base-sepolia", "base", "solana", "solana-devnet"],
+  "allowedRails": ["evm", "solana"],
+  "preferRail": "evm"
+}

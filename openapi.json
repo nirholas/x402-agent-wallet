@@ -1,0 +1,420 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402-agent-wallet",
+    "version": "0.1.0",
+    "description": "Wallet policy daemon for agents — budgets, per-merchant caps, per-rail caps, approval thresholds, signed policy verdicts. Pay in USDC on Base or Solana; the client picks the rail.",
+    "license": { "name": "Apache-2.0", "identifier": "Apache-2.0" },
+    "contact": { "name": "nirholas", "email": "nichxbt@gmail.com", "url": "https://github.com/nirholas/x402-agent-wallet" }
+  },
+  "servers": [{ "url": "http://localhost:4021", "description": "Local dev daemon" }],
+  "tags": [
+    { "name": "paid", "description": "Routes behind the x402 dual-rail paywall" },
+    { "name": "free", "description": "Free routes (some require X-Admin-Key)" }
+  ],
+  "paths": {
+    "/policy-check": {
+      "post": {
+        "tags": ["paid"],
+        "operationId": "policyCheck",
+        "summary": "Evaluate a spend intent against the wallet policy",
+        "description": "Price: $0.001 USDC. Returns an HMAC-signed verdict. A denial is a 200 with `allowed: false` — you paid for the answer, and 'no' is an answer.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SpendIntent" },
+              "examples": {
+                "within-policy": { "value": { "merchant": "api.example.com", "amountUsd": 0.02, "network": "base-sepolia" } },
+                "needs-approval": { "value": { "merchant": "api.example.com", "amountUsd": 0.06, "approvalRef": "slack-approval-8812" } },
+                "solana": { "value": { "merchant": "api.example.com", "amountUsd": 0.01, "network": "solana" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed verdict",
+            "headers": { "X-PAYMENT-RESPONSE": { "$ref": "#/components/headers/XPaymentResponse" } },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["verdict"],
+                  "properties": {
+                    "verdict": { "$ref": "#/components/schemas/SignedVerdict" },
+                    "paidWith": { "$ref": "#/components/schemas/PaymentReceipt" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "402": { "$ref": "#/components/responses/PaymentRequired" },
+          "500": { "$ref": "#/components/responses/ServerError" },
+          "502": { "$ref": "#/components/responses/FacilitatorError" }
+        }
+      }
+    },
+    "/record-spend": {
+      "post": {
+        "tags": ["free"],
+        "operationId": "recordSpend",
+        "summary": "Record a settled spend against the budget",
+        "security": [{ "adminKey": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["merchant", "amountUsd"],
+                "properties": {
+                  "merchant": { "type": "string" },
+                  "amountUsd": { "type": "number" },
+                  "resource": { "type": "string" },
+                  "network": { "type": "string" },
+                  "verdictId": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ledger entry written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "entry": { "$ref": "#/components/schemas/SpendEntry" },
+                    "spentTodayUsd": { "type": "number" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/ledger": {
+      "get": {
+        "tags": ["free"],
+        "operationId": "getLedger",
+        "summary": "Spend history, per-rail totals and the policy digest",
+        "security": [{ "adminKey": [] }],
+        "responses": {
+          "200": {
+            "description": "The ledger",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": { "$ref": "#/components/schemas/WalletPolicy" },
+                    "policyDigest": { "type": "string" },
+                    "spentTodayUsd": { "type": "number" },
+                    "spentTodayByRail": {
+                      "type": "object",
+                      "properties": { "evm": { "type": "number" }, "solana": { "type": "number" } }
+                    },
+                    "entries": { "type": "array", "items": { "$ref": "#/components/schemas/SpendEntry" } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/policy": {
+      "get": {
+        "tags": ["free"],
+        "operationId": "getPolicy",
+        "summary": "The policy in force and its digest",
+        "responses": {
+          "200": {
+            "description": "Policy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "policy": { "$ref": "#/components/schemas/WalletPolicy" },
+                    "policyDigest": { "type": "string" },
+                    "spentTodayUsd": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verify": {
+      "post": {
+        "tags": ["free"],
+        "operationId": "verifyVerdict",
+        "summary": "Verify the HMAC signature on a verdict",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["payload", "signature"],
+                "properties": { "payload": {}, "signature": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification result",
+            "content": {
+              "application/json": {
+                "schema": { "type": "object", "required": ["valid"], "properties": { "valid": { "type": "boolean" } } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["free"],
+        "operationId": "health",
+        "summary": "Liveness and the payment rails currently advertised",
+        "responses": {
+          "200": {
+            "description": "Service is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "service": { "type": "string" },
+                    "rails": { "type": "array", "items": { "$ref": "#/components/schemas/Rail" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/x402": {
+      "get": {
+        "tags": ["free"],
+        "operationId": "manifest",
+        "summary": "x402 discovery manifest",
+        "responses": {
+          "200": {
+            "description": "Manifest describing paid resources, prices and both payment rails",
+            "content": { "application/json": { "schema": { "type": "object" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "adminKey": { "type": "apiKey", "in": "header", "name": "X-Admin-Key" }
+    },
+    "headers": {
+      "XPaymentResponse": {
+        "description": "Base64 JSON settlement receipt: { success, rail, network, transaction, payer, amount, asset, resource }",
+        "schema": { "type": "string" }
+      }
+    },
+    "responses": {
+      "PaymentRequired": {
+        "description": "Payment required. `accepts` lists both rails — pick one, sign it, retry with `X-PAYMENT`.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/PaymentRequiredBody" },
+            "example": {
+              "x402Version": 1,
+              "error": "X-PAYMENT header is required",
+              "accepts": [
+                {
+                  "scheme": "exact", "network": "base-sepolia", "maxAmountRequired": "1000",
+                  "resource": "http://localhost:4021/policy-check",
+                  "description": "x402-agent-wallet: POST /policy-check",
+                  "mimeType": "application/json",
+                  "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+                  "maxTimeoutSeconds": 60,
+                  "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                  "extra": { "name": "USDC", "version": "2" }
+                },
+                {
+                  "scheme": "exact", "network": "solana", "maxAmountRequired": "1000",
+                  "resource": "http://localhost:4021/policy-check",
+                  "description": "x402-agent-wallet: POST /policy-check",
+                  "mimeType": "application/json",
+                  "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+                  "maxTimeoutSeconds": 60,
+                  "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                  "extra": { "name": "USD Coin", "decimals": 6, "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4", "amount": "1000" }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "BadRequest": {
+        "description": "Malformed request",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Unauthorized": {
+        "description": "Missing or wrong X-Admin-Key",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "ServerError": {
+        "description": "Server misconfiguration (e.g. no valid payTo on either rail)",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "FacilitatorError": {
+        "description": "The payment facilitator could not be reached. Nothing was charged.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      }
+    },
+    "schemas": {
+      "PaymentRequirements": {
+        "type": "object",
+        "required": ["scheme", "network", "maxAmountRequired", "resource", "payTo", "asset"],
+        "properties": {
+          "scheme": { "type": "string", "const": "exact" },
+          "network": { "type": "string", "examples": ["base-sepolia", "base", "solana", "solana-devnet"] },
+          "maxAmountRequired": { "type": "string", "description": "USDC atomic units (6 decimals)" },
+          "resource": { "type": "string", "format": "uri" },
+          "description": { "type": "string" },
+          "mimeType": { "type": "string" },
+          "payTo": { "type": "string" },
+          "maxTimeoutSeconds": { "type": "integer" },
+          "asset": { "type": "string" },
+          "extra": { "type": "object", "additionalProperties": true }
+        }
+      },
+      "PaymentRequiredBody": {
+        "type": "object",
+        "required": ["x402Version", "accepts"],
+        "properties": {
+          "x402Version": { "type": "integer", "const": 1 },
+          "error": { "type": "string" },
+          "accepts": { "type": "array", "items": { "$ref": "#/components/schemas/PaymentRequirements" }, "minItems": 1 }
+        }
+      },
+      "PaymentReceipt": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "rail": { "type": "string", "enum": ["evm", "solana"] },
+          "network": { "type": "string" },
+          "transaction": { "type": "string" },
+          "payer": { "type": "string" },
+          "amount": { "type": "string" },
+          "asset": { "type": "string" },
+          "resource": { "type": "string" }
+        }
+      },
+      "Rail": {
+        "type": "object",
+        "properties": {
+          "rail": { "type": "string", "enum": ["evm", "solana"] },
+          "network": { "type": "string" },
+          "payTo": { "type": "string" },
+          "facilitator": { "type": "string", "format": "uri" }
+        }
+      },
+      "SpendIntent": {
+        "type": "object",
+        "required": ["merchant", "amountUsd"],
+        "properties": {
+          "merchant": { "type": "string", "description": "Merchant host or full URL" },
+          "amountUsd": { "type": "number", "minimum": 0 },
+          "resource": { "type": "string" },
+          "network": { "type": "string" },
+          "rail": { "type": "string", "enum": ["evm", "solana"] },
+          "approvalRef": { "type": "string" }
+        }
+      },
+      "WalletPolicy": {
+        "type": "object",
+        "required": ["dailyBudgetUsd", "perRequestMaxUsd"],
+        "properties": {
+          "dailyBudgetUsd": { "type": "number", "minimum": 0 },
+          "perRequestMaxUsd": { "type": "number", "minimum": 0 },
+          "approvalThresholdUsd": { "type": "number", "minimum": 0 },
+          "perMerchantDailyUsd": { "type": "object", "additionalProperties": { "type": "number" } },
+          "perRailDailyUsd": {
+            "type": "object",
+            "properties": { "evm": { "type": "number" }, "solana": { "type": "number" } }
+          },
+          "allowedMerchants": { "type": "array", "items": { "type": "string" } },
+          "blockedMerchants": { "type": "array", "items": { "type": "string" } },
+          "allowedNetworks": { "type": "array", "items": { "type": "string" } },
+          "allowedRails": { "type": "array", "items": { "type": "string", "enum": ["evm", "solana"] } },
+          "preferRail": { "type": "string", "enum": ["evm", "solana"] }
+        }
+      },
+      "PolicyVerdict": {
+        "type": "object",
+        "properties": {
+          "verdictId": { "type": "string" },
+          "allowed": { "type": "boolean" },
+          "reason": { "type": "string" },
+          "requiresApproval": { "type": "boolean" },
+          "intent": { "$ref": "#/components/schemas/SpendIntent" },
+          "remainingBudget": {
+            "type": "object",
+            "properties": {
+              "dailyUsd": { "type": "number" },
+              "merchantDailyUsd": { "type": "number" },
+              "railDailyUsd": { "type": "number" }
+            }
+          },
+          "policyDigest": { "type": "string" },
+          "checkedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SignedVerdict": {
+        "type": "object",
+        "properties": {
+          "payload": { "$ref": "#/components/schemas/PolicyVerdict" },
+          "signature": { "type": "string" },
+          "algorithm": { "type": "string", "const": "HMAC-SHA256" }
+        }
+      },
+      "SpendEntry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string", "enum": ["spend", "approved-intent", "denied-intent"] },
+          "merchant": { "type": "string" },
+          "amountUsd": { "type": "number" },
+          "resource": { "type": "string" },
+          "network": { "type": "string" },
+          "rail": { "type": "string", "enum": ["evm", "solana"] },
+          "verdictId": { "type": "string" },
+          "reason": { "type": "string" },
+          "at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" },
+          "hint": { "type": "string" }
+        }
+      }
+    }
+  }
+}

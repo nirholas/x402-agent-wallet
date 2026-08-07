@@ -1,0 +1,102 @@
+{
+  "x402Version": 1,
+  "name": "x402-agent-wallet",
+  "description": "Wallet policy daemon for agents — budgets, per-merchant caps, per-rail caps, approval thresholds, signed policy verdicts. Pay in USDC on Base or Solana; your client picks the rail.",
+  "contact": "nichxbt@gmail.com",
+  "repository": "https://github.com/nirholas/x402-agent-wallet",
+  "documentation": "https://nirholas.github.io/x402-agent-wallet/",
+  "skill": "https://raw.githubusercontent.com/nirholas/x402-agent-wallet/main/skill.md",
+  "rails": [
+    {
+      "rail": "evm",
+      "network": "base-sepolia",
+      "asset": "USDC",
+      "assetAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+      "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+      "facilitator": "https://x402.org/facilitator"
+    },
+    {
+      "rail": "solana",
+      "network": "solana",
+      "asset": "USDC",
+      "assetAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+      "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+      "facilitator": "https://facilitator.payai.network"
+    }
+  ],
+  "resources": [
+    {
+      "resource": "POST /policy-check",
+      "description": "Evaluate a spend intent against this wallet's policy. Returns an HMAC-signed verdict — allowed or not, why, and every remaining budget — in the 200 body.",
+      "price": "$0.001",
+      "networks": ["base-sepolia", "solana"],
+      "asset": "USDC",
+      "inputSchema": {
+        "type": "object",
+        "required": ["merchant", "amountUsd"],
+        "properties": {
+          "merchant": { "type": "string", "description": "Merchant host or URL" },
+          "amountUsd": { "type": "number", "description": "Proposed spend in USD" },
+          "resource": { "type": "string", "description": "Resource URL being purchased" },
+          "network": { "type": "string", "examples": ["base-sepolia", "base", "solana", "solana-devnet"] },
+          "rail": { "type": "string", "enum": ["evm", "solana"] },
+          "approvalRef": { "type": "string", "description": "Human/supervisor sign-off id, for above-threshold spends" }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "required": ["verdict"],
+        "properties": {
+          "verdict": {
+            "type": "object",
+            "properties": {
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "verdictId": { "type": "string" },
+                  "allowed": { "type": "boolean" },
+                  "reason": { "type": "string" },
+                  "requiresApproval": { "type": "boolean" },
+                  "intent": { "type": "object" },
+                  "remainingBudget": {
+                    "type": "object",
+                    "properties": {
+                      "dailyUsd": { "type": "number" },
+                      "merchantDailyUsd": { "type": "number" },
+                      "railDailyUsd": { "type": "number" }
+                    }
+                  },
+                  "policyDigest": { "type": "string" },
+                  "checkedAt": { "type": "string", "format": "date-time" }
+                }
+              },
+              "signature": { "type": "string" },
+              "algorithm": { "type": "string", "enum": ["HMAC-SHA256"] }
+            }
+          },
+          "paidWith": {
+            "type": "object",
+            "description": "Settlement receipt for the payment that unlocked this verdict",
+            "properties": {
+              "rail": { "type": "string", "enum": ["evm", "solana"] },
+              "network": { "type": "string" },
+              "transaction": { "type": "string" },
+              "payer": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "free": [
+    { "resource": "GET /ledger", "description": "Spend history, per-rail totals and the policy digest (requires X-Admin-Key)" },
+    { "resource": "POST /record-spend", "description": "Record a settled spend against the budget (requires X-Admin-Key)" },
+    { "resource": "GET /policy", "description": "The policy in force and its HMAC digest" },
+    { "resource": "POST /verify", "description": "Verify the signature on a verdict issued by this daemon" },
+    { "resource": "GET /health", "description": "Liveness plus the payment rails currently advertised" }
+  ],
+  "library": {
+    "npm": "x402-agent-wallet",
+    "exports": ["wrapPayerFetch", "PolicyEngine", "paywall", "railOf", "sign", "verify"]
+  }
+}

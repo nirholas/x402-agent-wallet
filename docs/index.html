@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>x402-agent-wallet — spending policy for x402 agents</title>
+<meta name="description" content="Wallet policy daemon and client wrapper for AI agents paying with x402 — budgets, per-merchant and per-rail caps, approval thresholds, signed verdicts. USDC on Base or Solana.">
+<style>
+  :root {
+    --accent: #0052ff;
+    --solana: #14f195;
+    --bg: #ffffff;
+    --bg-soft: #f6f8fa;
+    --fg: #1a1a1a;
+    --fg-soft: #57606a;
+    --border: #d8dee4;
+    --code-bg: #f6f8fa;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --bg-soft: #161b22;
+      --fg: #e6edf3;
+      --fg-soft: #9198a1;
+      --border: #30363d;
+      --code-bg: #161b22;
+      --accent: #4d8bff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 20px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  header { padding: 72px 0 48px; border-bottom: 1px solid var(--border); }
+  .eyebrow {
+    display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 14px;
+  }
+  h1 { font-size: clamp(32px, 6vw, 46px); line-height: 1.1; margin: 0 0 14px; letter-spacing: -.02em; }
+  .tagline { font-size: clamp(17px, 2.6vw, 21px); color: var(--fg-soft); margin: 0 0 28px; max-width: 640px; }
+  .rails { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+  .pill {
+    font-size: 13px; padding: 4px 11px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--bg-soft); color: var(--fg-soft);
+  }
+  .pill strong { color: var(--fg); font-weight: 600; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .btn {
+    display: inline-block; padding: 9px 18px; border-radius: var(--radius); font-weight: 600; font-size: 15px;
+    background: var(--accent); color: #fff; border: 1px solid var(--accent);
+  }
+  .btn:hover { text-decoration: none; filter: brightness(1.08); }
+  .btn.ghost { background: transparent; color: var(--fg); border-color: var(--border); }
+  h2 { font-size: 24px; margin: 52px 0 14px; letter-spacing: -.01em; }
+  h3 { font-size: 17px; margin: 28px 0 8px; }
+  p { margin: 0 0 14px; }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; overflow-x: auto; font-size: 13.5px; line-height: 1.55;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: .92em; }
+  p code, li code, td code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; }
+  table { width: 100%; border-collapse: collapse; margin: 14px 0 20px; font-size: 14.5px; display: block; overflow-x: auto; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 12.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--fg-soft); font-weight: 600; }
+  tbody tr:last-child td { border-bottom: none; }
+  .price { font-weight: 600; color: var(--accent); white-space: nowrap; }
+  .flow { margin: 20px 0 28px; }
+  .flow svg { width: 100%; height: auto; max-width: 720px; display: block; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 18px 0 8px; }
+  .card { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; background: var(--bg-soft); }
+  .card h3 { margin: 0 0 5px; font-size: 15px; }
+  .card p { margin: 0; font-size: 14px; color: var(--fg-soft); }
+  .warn {
+    border: 1px solid #d1242f; border-left-width: 4px; border-radius: var(--radius);
+    background: rgba(209, 36, 47, .06); padding: 14px 18px; margin: 22px 0;
+  }
+  .warn strong { color: #d1242f; }
+  @media (prefers-color-scheme: dark) { .warn { background: rgba(248, 81, 73, .1); border-color: #f85149; } .warn strong { color: #ff7b72; } }
+  footer { margin: 64px 0 40px; padding-top: 22px; border-top: 1px solid var(--border); color: var(--fg-soft); font-size: 14px; }
+  footer a { color: var(--fg-soft); text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">x402 Suite · infrastructure</span>
+    <h1>x402-agent-wallet</h1>
+    <p class="tagline">The spending governor for agents that pay with x402. Budgets, per-merchant and per-rail caps, approval thresholds — enforced before anything is signed, and answered with a verdict you can prove.</p>
+    <div class="rails">
+      <span class="pill">Pay in <strong>USDC on Base</strong></span>
+      <span class="pill">or <strong>USDC on Solana</strong></span>
+      <span class="pill">Rail-aware policies</span>
+    </div>
+    <pre><code>npm install x402-agent-wallet</code></pre>
+    <div class="cta">
+      <a class="btn" href="https://github.com/nirholas/x402-agent-wallet">GitHub</a>
+      <a class="btn ghost" href="./tutorial.md">Tutorial</a>
+      <a class="btn ghost" href="./api.md">API reference</a>
+      <a class="btn ghost" href="./agents.md">For agents</a>
+    </div>
+  </header>
+
+  <h2>The problem</h2>
+  <p>Give an agent a funded wallet and an x402 client and it can spend money in a loop, at machine speed, with no human in the path. The failure modes are not exotic: a retry storm on a $0.05 endpoint, a prompt-injected merchant, a pricing bug that turns $0.001 into $1.00.</p>
+  <p><code>maxValue</code> in <code>x402-fetch</code> caps a <em>single</em> payment. That is not a budget. This is the budget — plus the caps, the allowlists, the approval threshold, and a signed record of every decision.</p>
+
+  <h2>Enforce it client-side</h2>
+  <pre><code>import { wrapPayerFetch, PolicyViolationError } from "x402-agent-wallet";
+import { createSigner } from "x402-fetch";
+
+const payFetch = wrapPayerFetch(fetch, {
+  signer: {
+    evm: await createSigner("base-sepolia", process.env.EVM_KEY!),
+    svm: await createSigner("solana", process.env.SOLANA_KEY!),
+  },
+  policy: {
+    dailyBudgetUsd: 1,
+    perRequestMaxUsd: 0.05,
+    perMerchantDailyUsd: { "api.example.com": 0.25 },
+    perRailDailyUsd: { solana: 0.5 },
+    approvalThresholdUsd: 0.02,
+    preferRail: "evm",
+  },
+});
+
+await payFetch("https://api.example.com/paid");   // PolicyViolationError if blocked</code></pre>
+
+  <div class="flow">
+    <svg viewBox="0 0 720 150" role="img" aria-label="The policy check happens between choosing a rail and signing, so a blocked payment is never signed">
+      <defs>
+        <marker id="ar2" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+          <path d="M0,0 L8,3 L0,6 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.5" opacity=".85" marker-end="url(#ar2)">
+        <path d="M70 44 H128"/>
+        <path d="M196 44 H252"/>
+        <path d="M368 44 H424"/>
+        <path d="M520 44 H578"/>
+        <path d="M310 66 V108"/>
+      </g>
+      <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="11.5" fill="currentColor">
+        <text x="34" y="48" text-anchor="middle">fetch</text>
+        <text x="162" y="48" text-anchor="middle">402</text>
+        <rect x="256" y="28" width="108" height="32" rx="7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <text x="310" y="48" text-anchor="middle">policy check</text>
+        <text x="472" y="48" text-anchor="middle">sign &amp; retry</text>
+        <text x="640" y="48" text-anchor="middle">200 + artifact</text>
+        <text x="310" y="126" text-anchor="middle" font-size="11" opacity=".75">PolicyViolationError</text>
+        <text x="310" y="142" text-anchor="middle" font-size="10.5" opacity=".6">nothing was signed</text>
+      </g>
+    </svg>
+  </div>
+
+  <h2>Or run the daemon</h2>
+  <table>
+    <thead><tr><th>Route</th><th>Price</th><th>What you get back</th></tr></thead>
+    <tbody>
+      <tr><td><code>POST /policy-check</code></td><td class="price">$0.001</td><td>Signed verdict: allowed, reason, requiresApproval, every remaining budget, policy digest</td></tr>
+      <tr><td><code>POST /record-spend</code></td><td class="price">free*</td><td>Ledger entry for a settled payment</td></tr>
+      <tr><td><code>GET /ledger</code></td><td class="price">free*</td><td>Spend history + per-rail totals</td></tr>
+      <tr><td><code>GET /policy</code></td><td class="price">free</td><td>The policy in force and its digest</td></tr>
+      <tr><td><code>POST /verify</code></td><td class="price">free</td><td>Signature check on a verdict</td></tr>
+    </tbody>
+  </table>
+  <p><em>*requires <code>X-Admin-Key</code>.</em> A denial is a <strong>200</strong> with <code>allowed: false</code> — you paid for the answer, and "no" is the answer.</p>
+
+  <h2>Rail-aware, end to end</h2>
+  <table>
+    <thead><tr><th>Rail</th><th>Network</th><th>payTo</th><th>Facilitator</th></tr></thead>
+    <tbody>
+      <tr><td>EVM</td><td><code>base-sepolia</code> / <code>base</code></td><td><code>0x40252CFDF8B20Ed757D61ff157719F33Ec332402</code></td><td>x402.org</td></tr>
+      <tr><td>Solana</td><td><code>solana</code> / <code>solana-devnet</code></td><td><code>WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW</code></td><td>PayAI</td></tr>
+    </tbody>
+  </table>
+  <p><code>allowedRails</code> gates which chains the agent may touch, <code>perRailDailyUsd</code> caps each independently, <code>preferRail</code> picks when both are offered, and the ledger reports <code>spentTodayByRail</code>. On Solana the facilitator sponsors the network fee, so the agent needs only USDC — no SOL.</p>
+
+  <h2>Docs</h2>
+  <div class="cards">
+    <a class="card" href="./tutorial.md"><h3>Tutorial →</h3><p>Run the daemon, take a 402, get a signed verdict, then move enforcement client-side.</p></a>
+    <a class="card" href="./api.md"><h3>API reference →</h3><p>Every route and every library export, with schemas and denial reasons.</p></a>
+    <a class="card" href="./agents.md"><h3>For AI agents →</h3><p>Discovery, both rails, MCP integration, and where to get listed.</p></a>
+    <a class="card" href="https://github.com/nirholas/x402-agent-wallet/blob/main/skill.md"><h3>skill.md →</h3><p>The agent-facing contract in one file.</p></a>
+    <a class="card" href="https://github.com/nirholas/x402-agent-wallet/blob/main/public/.well-known/x402"><h3>.well-known/x402 →</h3><p>Machine-readable manifest for x402 indexes.</p></a>
+    <a class="card" href="https://github.com/nirholas/x402-agent-wallet/blob/main/openapi.json"><h3>OpenAPI 3.1 →</h3><p>Including the 402 response and PaymentRequirements schema.</p></a>
+  </div>
+
+  <footer>
+    <p>Part of the <a href="https://github.com/nirholas/x402-suite">x402 Suite</a> · Apache-2.0 · <a href="mailto:nichxbt@gmail.com">nichxbt@gmail.com</a></p>
+  </footer>
+
+</div>
+</body>
+</html>
