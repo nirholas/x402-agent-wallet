@@ -2,7 +2,7 @@
 
 ## What this service does
 
-`x402-agent-wallet` is the spending governor for an agent that pays with x402. It holds a **WalletPolicy** — daily budget, per-request ceiling, per-merchant and per-rail caps, an approval threshold, merchant allow/block lists — and answers one question: *may I spend this?* The answer comes back **HMAC-signed**, so the agent can prove to a supervisor exactly what it was authorised to do. The npm package also exports `wrapPayerFetch()`, which enforces the same policy locally, *before* anything is signed.
+`x402-agent-wallet` is the spending governor for an agent that pays with x402. It holds a **WalletPolicy** — daily budget, per-request ceiling, per-merchant and per-rail caps, an approval threshold, merchant allow/block lists — and answers one question: *may I spend this?* The answer comes back **HMAC-signed**, so the agent can prove to a supervisor exactly what it was authorised to do. The npm package (`@nirholas/x402-agent-wallet`) also exports `wrapPayerFetch()`, which enforces the same policy locally, *before* anything is signed.
 
 **Payment: USDC on Base or Solana — your client picks the rail.** Every 402 lists both.
 
@@ -108,7 +108,7 @@ Body `{ payload, signature }` → `{ valid: true|false }`. Verifies a verdict.
 Cheaper and safer than calling the daemon per spend — the check happens before signing, so a blocked payment never touches a chain:
 
 ```ts
-import { wrapPayerFetch } from "x402-agent-wallet";
+import { wrapPayerFetch } from "@nirholas/x402-agent-wallet";
 
 const payFetch = wrapPayerFetch(fetch, {
   signer: { evm: evmSigner, svm: solanaSigner },

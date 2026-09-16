@@ -7,7 +7,7 @@
 [![rails: Base + Solana](https://img.shields.io/badge/rails-Base%20%2B%20Solana-14f195.svg)](#both-rails-always)
 
 ```bash
-npm install x402-agent-wallet
+npm install @nirholas/x402-agent-wallet
 ```
 
 ## The problem
@@ -40,7 +40,7 @@ npm run client                                                          # pay it
 The important half. The policy check runs **inside** the payment-requirements selection step, so a blocked payment is never signed — nothing on-chain, nothing to refund.
 
 ```ts
-import { wrapPayerFetch, PolicyViolationError } from "x402-agent-wallet";
+import { wrapPayerFetch, PolicyViolationError } from "@nirholas/x402-agent-wallet";
 import { createSigner } from "x402-fetch";
 
 const payFetch = wrapPayerFetch(fetch, {
