@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "x402-agent-wallet"
+abstract: "Wallet policy daemon for agents: budgets, per-merchant caps, approval thresholds, signed policy verdicts"
+license: Apache-2.0
+repository-code: "https://github.com/nirholas/x402-agent-wallet"
+url: "https://three.ws"
+authors:
+  - name: three.ws
+    website: "https://three.ws"

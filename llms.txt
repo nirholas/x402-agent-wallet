@@ -1,0 +1,28 @@
+# x402-agent-wallet
+
+> Wallet policy daemon for agents: budgets, per-merchant caps, approval thresholds, signed policy verdicts
+
+x402-agent-wallet is an open-source repository by nirholas, part of the three.ws ecosystem.
+
+## Docs
+
+- [README](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/README.md): install, usage and reference
+- [The problem](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/README.md#the-problem)
+- [Why x402 for this](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/README.md#why-x402-for-this)
+- [Quickstart](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/README.md#quickstart)
+- [Use it as a library](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/README.md#use-it-as-a-library)
+- [The daemon](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/README.md#the-daemon)
+- [Both rails, always](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/README.md#both-rails-always)
+- [How x402 works here](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/README.md#how-x402-works-here)
+- [Real backend / API keys](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/README.md#real-backend-api-keys)
+- [AGENTS.md](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/AGENTS.md): guidance for coding agents
+- [Full text for LLMs](https://github.com/nirholas/x402-agent-wallet/blob/HEAD/llms-full.txt): the README inlined
+
+## Project
+
+- [Source](https://github.com/nirholas/x402-agent-wallet)
+- [Issues](https://github.com/nirholas/x402-agent-wallet/issues)
+- [Discussions](https://github.com/nirholas/x402-agent-wallet/discussions)
+- [Homepage](https://nirholas.github.io/x402-agent-wallet/)
+- [three.ws](https://three.ws): the platform this is part of
+- [All repositories by nirholas](https://github.com/nirholas/nirholas#readme)
