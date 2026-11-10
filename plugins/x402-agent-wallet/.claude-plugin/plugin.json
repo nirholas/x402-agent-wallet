@@ -1,0 +1,18 @@
+{
+  "name": "x402-agent-wallet",
+  "version": "0.1.0",
+  "description": "Spending policy for agents that pay over x402: budgets, per-merchant caps, approval thresholds and signed verdicts.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/x402-agent-wallet",
+  "homepage": "https://nirholas.github.io/x402-agent-wallet/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "x402",
+    "wallet",
+    "spending-limits",
+    "policy",
+    "agents"
+  ]
+}

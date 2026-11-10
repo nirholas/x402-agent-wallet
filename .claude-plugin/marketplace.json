@@ -1,0 +1,22 @@
+{
+  "name": "x402-agent-wallet",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Spending policy for agents that pay over x402: budgets, per-merchant caps, approval thresholds and signed verdicts.",
+  "plugins": [
+    {
+      "name": "x402-agent-wallet",
+      "source": "./plugins/x402-agent-wallet",
+      "description": "Spending policy for agents that pay over x402: budgets, per-merchant caps, approval thresholds and signed verdicts.",
+      "category": "finance",
+      "tags": [
+        "x402",
+        "wallet",
+        "spending-limits",
+        "policy",
+        "agents"
+      ]
+    }
+  ]
+}
